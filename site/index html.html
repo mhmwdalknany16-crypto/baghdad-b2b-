@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة جملة بغداد (B2B)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Tahoma, Arial, sans-serif; background: #f0f2f5; padding-bottom: 80px; }
+.top { background: #0052cc; color: white; padding: 20px; text-align: center; }
+.top h1 { margin-bottom: 8px; font-size: 24px; }
+.sync-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+.tabs { display: flex; background: white; border-bottom: 2px solid #ccc; position: sticky; top: 0; z-index: 900; }
+.tabs button { flex: 1; padding: 15px; font-size: 16px; font-weight: bold; border: none; background: white; cursor: pointer; }
+.tabs button.on { background: #eef5ff; color: #0052cc; border-bottom: 3px solid #0052cc; }
+.card { max-width: 750px; margin: 16px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+.vip-card { border-right: 5px solid #ffc107; background: #fffdf5; }
+input, select { width: 100%; padding: 12px; margin: 8px 0 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; background: white; }
+.btn { width: 100%; padding: 14px; background: #0052cc; color: white; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+.btn-g { background: #28a745; }
+.btn-r { background: #dc3545; width: auto; padding: 8px 14px; font-size: 14px; }
+.row { border-bottom: 1px solid #eee; padding: 14px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.row:last-child { border-bottom: none; }
+.wa { background: #25D366; color: white; padding: 10px 14px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; border: none; cursor: pointer; font-size: 14px; text-align: center; }
+.label { font-weight: bold; color: #333; margin-top: 8px; display: block; }
+.hidden { display: none !important; }
+.price { color: #0052cc; font-weight: bold; font-size: 19px; }
+.sup-name { color: #555; font-size: 14px; }
+.add-cart-btn { background: #ff9800; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
+.cart-float { position: fixed; bottom: 20px; left: 20px; background: #ff9800; color: white; width: 62px; height: 62px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
+.cart-count { position: absolute; top: -4px; right: -4px; background: #dc3545; color: white; width: 25px; height: 25px; border-radius: 50%; font-size: 14px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+.modal { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.6); z-index: 1001; display: flex; align-items: center; justify-content: center; padding: 15px; }
+.modal-content { background: white; border-radius: 12px; max-width: 550px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 20px; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+.cart-item-info { flex: 1; }
+.cart-remove { background: #dc3545; color: white; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px; }
+.cart-total { padding: 12px; background: #eef5ff; border-radius: 8px; margin: 12px 0; text-align: center; font-size: 18px; font-weight: bold; color: #0052cc; }
+.admin-switch { text-align: center; margin-top: 15px; font-size: 14px; color: #0052cc; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>📦 منصة جملة بغداد (B2B)</h1>
+  <div class="sync-badge">🟢 متصل ومزامن سحابياً</div>
+</div>
+
+<div class="tabs">
+  <button id="t1" class="on" onclick="showTab(1)">🛒 واجهة المشتري</button>
+  <button id="t2" onclick="showTab(2)">🔐 دخول الموزعين</button>
+</div>
+
+<div id="s1">
+  <div class="card">
+    <input id="q" type="search" placeholder="🔍 ابحث عن مادة أو موزع..." oninput="drawProducts()">
+    <select id="supFilter" onchange="drawProducts()">
+      <option value="">🏪 كل الموزعين (المميزون أولاً)</option>
+    </select>
+  </div>
+  <div id="productList"></div>
+</div>
+
+<div id="s2" class="hidden">
+  <div id="loginBox" class="card">
+    <h2>🔐 دخول الموزعين</h2>
+    <p style="color:#666;margin-top:5px">أدخل الرمز السري الخاص بك</p>
+    <input id="pin" type="password" placeholder="الرمز السري">
+    <button class="btn" onclick="doSupplierLogin()">دخول</button>
+    <div class="admin-switch" onclick="toggleAdminLogin(true)">👑 الدخول كمدير للمنصة</div>
+  </div>
+
+  <div id="adminLoginBox" class="card hidden">
+    <h2>👑 دخول الإدارة</h2>
+    <p style="color:#666;margin-top:5px">أدخل بيانات المدير المصرح له</p>
+    <input id="adminPass" type="password" placeholder="كلمة مرور المدير">
+    <button class="btn btn-g" onclick="doAdminLogin()">دخول لوحة الإدارة</button>
+    <div class="admin-switch" onclick="toggleAdminLogin(false)">🔙 العودة لدخول الموزعين</div>
+  </div>
+
+  <div id="adminBox" class="hidden">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+      <h2>👑 لوحة المدير</h2>
+      <button class="btn btn-r" onclick="doLogout()">خروج</button>
+    </div>
+    <div class="card">
+      <h3>➕ إضافة موزع جديد</h3>
+      <label class="label">اسم الموزع أو الشركة:</label>
+      <input id="supName" placeholder="مثال: شركة النور للجملة">
+      <label class="label">رقم الواتساب (مع مفتاح الدولة):</label>
+      <input id="supPhone" placeholder="9647700000000">
+      <label class="label">الرمز السري للدخول:</label>
+      <input id="supPin" placeholder="4 أرقام">
+      <label class="label" style="cursor:pointer"><input type="checkbox" id="supVip" style="width:auto;margin-left:8px"> ⭐ موزع مميز</label>
+      <button class="btn btn-g" onclick="addSupplier()">حفظ الموزع</button>
+    </div>
+    <div class="card">
+      <h3>📋 قائمة الموزعين</h3>
+      <div id="supList">لا يوجد موزعون</div>
+    </div>
+  </div>
+
+  <div id="supplierBox" class="hidden">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+      <h2 id="welcomeMsg">مرحباً</h2>
+      <button class="btn btn-r" onclick="doLogout()">خروج</button>
+    </div>
+    <div class="card">
+      <h3>📦 نشر سعر جديد</h3>
+      <label class="label">اسم المادة:</label>
+      <input id="prodName" placeholder="مثال: كارتون زيت طعام">
+      <label class="label">السعر (د.ع):</label>
+      <input id="prodPrice" type="number" placeholder="15000">
+      <button class="btn btn-g" onclick="addProduct()">نشر السعر</button>
+    </div>
+    <div class="card">
+      <h3>📦 موادي المنشورة</h3>
+      <div id="myProductsForCart">لا توجد مواد</div>
+    </div>
+    <div class="card">
+      <h3>📋 سلة قائمة الأسعار</h3>
+      <div id="supCartItems">السلة فارغة</div>
+      <div id="supCartTotal" class="cart-total hidden"></div>
+      <button class="btn btn-g" onclick="sendSupplierCartWhatsApp()">📱 إرسال القائمة عبر واتساب</button>
+      <button class="btn btn-r" onclick="clearSupplierCart()" style="margin-top:10px;width:100%">🗑️ إفراغ القائمة</button>
+    </div>
+  </div>
+</div>
+
+<div id="buyerCartFloat" class="cart-float hidden" onclick="toggleBuyerModal(true)">
+  🛒 <span id="buyerCartCount" class="cart-count">0</span>
+</div>
+
+<div id="buyerModal" class="modal hidden" onclick="if(event.target===this)toggleBuyerModal(false)">
+  <div class="modal-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+      <h3>🛒 سلة المشتريات</h3>
+      <button class="btn btn-r" onclick="toggleBuyerModal(false)">✕ إغلاق</button>
+    </div>
+    <div id="buyerCartBody"></div>
+    <div id="buyerCartTotal" class="cart-total hidden"></div>
+    <button class="btn btn-g" onclick="sendBuyerCartWhatsApp()">📱 إرسال الطلب عبر واتساب</button>
+    <button class="btn btn-r" onclick="clearBuyerCart()" style="width:100%;margin-top:10px">🗑️ إفراغ السلة</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCNwJyNqiWDGYFpyF8BMQhsycAdHmSulp8",
+  authDomain: "baghdad-wholesale.firebaseapp.com",
+  databaseURL: "https://baghdad-wholesale-default-rtdb.firebaseio.com",
+  projectId: "baghdad-wholesale",
+  storageBucket: "baghdad-wholesale.firebasestorage.app",
+  messagingSenderId: "512837599314",
+  appId: "1:512837599314:web:b3a7b50da25926cea51f8b",
+  measurementId: "G-PK1ZRBW2S9"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let suppliers = [];
+let products = [];
+let buyerCart = JSON.parse(localStorage.getItem("bg_buyer_cart") || "[]");
+let supplierCart = JSON.parse(localStorage.getItem("bg_sup_cart") || "[]");
+let currentUser = null;
+
+function getEl(id) { return document.getElementById(id); }
+
+// 🔄 المزامنة الفورية للموزعين
+onValue(ref(db, 'suppliers'), (snapshot) => {
+  suppliers = [];
+  const data = snapshot.val();
+  if (data) {
+    Object.keys(data).forEach(key => {
+      suppliers.push({ id: key, ...data[key] });
+    });
+  }
+  drawProducts();
+  if (currentUser && currentUser.isAdmin) drawSuppliers();
+});
+
+// 🔄 المزامنة الفورية للمنتجات
+onValue(ref(db, 'products'), (snapshot) => {
+  products = [];
+  const data = snapshot.val();
+  if (data) {
+    Object.keys(data).forEach(key => {
+      products.push({ id: key, ...data[key] });
+    });
+  }
+  drawProducts();
+  if (currentUser && !currentUser.isAdmin) drawMyProductsForCart();
+});
+
+window.showTab = function(n) {
+  getEl("s1").className = (n === 1) ? "" : "hidden";
+  getEl("s2").className = (n === 2) ? "" : "hidden";
+  getEl("t1").className = (n === 1) ? "on" : "";
+  getEl("t2").className = (n === 2) ? "on" : "";
+  if (n === 1) drawProducts();
+}
+
+window.toggleAdminLogin = function(show) {
+  getEl("loginBox").className = show ? "hidden" : "card";
+  getEl("adminLoginBox").className = show ? "card" : "hidden";
+}
+
+window.doSupplierLogin = function() {
+  var pin = getEl("pin").value.trim();
+  if (!pin) { alert("أدخل الرمز"); return; }
+  var found = suppliers.find(function(s) { 
+  return String(s.pin).trim() === String(pin).trim(); 
+});
+  if (!found) { alert("الرمز غير صحيح"); return; }
+  if (!found.active) { alert("الحساب متوقف من قبل الإدارة"); return; }
+  currentUser = found;
+  getEl("loginBox").className = "hidden";
+  getEl("adminLoginBox").className = "hidden";
+  getEl("supplierBox").className = "";
+  getEl("welcomeMsg").innerText = "مرحباً: " + found.name;
+  getEl("pin").value = "";
+  drawMyProductsForCart();
+  drawSupCart();
+}
+
+window.doAdminLogin = function() {
+  var pass = getEl("adminPass").value.trim();
+  if (pass === atob("OTk5OQ==")) {
+    currentUser = { isAdmin: true };
+    getEl("loginBox").className = "hidden";
+    getEl("adminLoginBox").className = "hidden";
+    getEl("supplierBox").className = "hidden";
+    getEl("adminBox").className = "";
+    getEl("adminPass").value = "";
+    drawSuppliers();
+  } else {
+    alert("كلمة مرور المدير غير صحيحة");
+  }
+}
+
+window.doLogout = function() {
+  currentUser = null;
+  getEl("adminBox").className = "hidden";
+  getEl("supplierBox").className = "hidden";
+  getEl("loginBox").className = "card";
+  getEl("adminLoginBox").className = "hidden";
+}
+
+window.addSupplier = function() {
+  var name = getEl("supName").value.trim();
+  var phone = getEl("supPhone").value.trim();
+  var pin = getEl("supPin").value.trim();
+  var vip = getEl("supVip").checked;
+  if (!name || !phone || !pin) { alert("املأ كل الحقول"); return; }
+  push(ref(db, 'suppliers'), { name, phone, pin, vip, active: true });
+  alert("تمت إضافة الموزع برمز: " + pin);
+  getEl("supName").value = ""; getEl("supPhone").value = ""; getEl("supPin").value = ""; getEl("supVip").checked = false;
+}
+
+window.drawSuppliers = function() {
+  var html = "";
+  for (var i = 0; i < suppliers.length; i++) {
+    var s = suppliers[i];
+    html += '<div class="row"><div><b>' + s.name + '</b><br><small>📞 ' + s.phone + ' | 🔑 ' + s.pin + (s.vip ? ' | ⭐' : '') + '</small></div>';
+    html += '<button class="btn ' + (s.active ? 'btn-r' : 'btn-g') + '" onclick="toggleSup(\'' + s.id + '\')">' + (s.active ? 'إيقاف' : 'تفعيل') + '</button></div>';
+  }
+  getEl("supList").innerHTML = html || "لا يوجد موزعون";
+}
+
+window.toggleSup = function(supId) {
+  var sup = suppliers.find(s => s.id === supId);
+  update(ref(db, 'suppliers/' + supId), { active: !sup.active });
+}
+
+window.addProduct = function() {
+  if (!currentUser) { alert("سجل دخولك أولاً"); return; }
+  var name = getEl("prodName").value.trim();
+  var price = Number(getEl("prodPrice").value);
+  if (!name || !price || price <= 0) { alert("أدخل بيانات صحيحة"); return; }
+  push(ref(db, 'products'), { 
+    supId: currentUser.id, 
+    supName: currentUser.name, 
+    phone: currentUser.phone, 
+    vip: currentUser.vip, 
+    name, 
+    price 
+  });
+  alert("تم النشر ✅");
+  getEl("prodName").value = ""; getEl("prodPrice").value = "";
+}
+
+window.drawMyProductsForCart = function() {
+  var html = "";
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    if (p.supId === currentUser.id) {
+      var inCart = supplierCart.find(function(c) { return c.id === p.id; });
+      html += '<div class="row"><div><b>' + p.name + '</b><br><span class="price">' + p.price.toLocaleString() + ' د.ع</span></div><div>';
+      if (inCart) {
+        html += '<button class="btn btn-r" onclick="removeFromSupCart(\'' + p.id + '\')" style="margin-left:5px">إزالة</button>';
+      } else {
+        html += '<button class="add-cart-btn" onclick="addToSupCart(\'' + p.id + '\', \'' + p.name + '\', ' + p.price + ')">+ أضف للقائمة</button>';
+      }
+      html += '<button class="btn btn-r" onclick="delProduct(\'' + p.id + '\')" style="margin-right:5px">حذف</button></div></div>';
+    }
+  }
+  getEl("myProductsForCart").innerHTML = html || "لا توجد مواد";
+}
+
+window.delProduct = function(prodId) {
+  if (!confirm("حذف هذه المادة؟")) return;
+  remove(ref(db, 'products/' + prodId));
+}
+
+window.addToSupCart = function(id, name, price) {
+  supplierCart.push({ id, name, price });
+  localStorage.setItem("bg_sup_cart", JSON.stringify(supplierCart));
+  drawMyProductsForCart();
+  drawSupCart();
+}
+
+window.removeFromSupCart = function(id) {
+  supplierCart = supplierCart.filter(function(c) { return c.id !== id; });
+  localStorage.setItem("bg_sup_cart", JSON.stringify(supplierCart));
+  drawMyProductsForCart();
+  drawSupCart();
+}
+
+window.clearSupplierCart = function() {
+  if (!confirm("إفراغ القائمة؟")) return;
+  supplierCart = [];
+  localStorage.setItem("bg_sup_cart", JSON.stringify(supplierCart));
+  drawMyProductsForCart();
+  drawSupCart();
+}
+
+window.drawSupCart = function() {
+  var html = "", total = 0;
+  if (supplierCart.length === 0) {
+    html = "<p style='text-align:center;padding:15px;color:#666'>القائمة فارغة</p>";
+    getEl("supCartTotal").className = "cart-total hidden";
+  } else {
+    for (var i = 0; i < supplierCart.length; i++) {
+      var c = supplierCart[i];
+      total += c.price;
+      html += '<div class="cart-item"><div class="cart-item-info"><b>' + c.name + '</b><br><span class="price">' + c.price.toLocaleString() + ' د.ع</span></div><button class="cart-remove" onclick="removeFromSupCart(\'' + c.id + '\')">✕</button></div>';
+    }
+    getEl("supCartTotal").className = "cart-total";
+    getEl("supCartTotal").innerText = "المجموع: " + total.toLocaleString() + " د.ع";
+  }
+  getEl("supCartItems").innerHTML = html;
+}
+
+window.sendSupplierCartWhatsApp = function() {
+  if (supplierCart.length === 0) { alert("القائمة فارغة!"); return; }
+  var msg = "📦 *قائمة أسعار " + currentUser.name + "*\n\n";
+  var total = 0;
+  for (var i = 0; i < supplierCart.length; i++) {
+    var c = supplierCart[i];
+    total += c.price;
+    msg += "• " + c.name + " - " + c.price.toLocaleString() + " د.ع\n";
+  }
+  msg += "\n💰 *المجموع: " + total.toLocaleString() + " د.ع*\n📞 للتواصل: " + currentUser.phone;
+  var phone = String(currentUser.phone).replace(/\D/g, "");
+  window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(msg), "_blank");
+}
+
+window.addToBuyerCart = function(i) {
+  var p = products[i];
+  var s = suppliers.find(function(sup) { return sup.id === p.supId; });
+  buyerCart.push({ id: Date.now(), prodId: p.id, name: p.name, price: p.price, supName: s.name, phone: s.phone });
+  localStorage.setItem("bg_buyer_cart", JSON.stringify(buyerCart));
+  updateBuyerCartUI();
+  alert("✅ تمت الإضافة للسلة");
+}
+
+window.removeFromBuyerCart = function(index) {
+  buyerCart.splice(index, 1);
+  localStorage.setItem("bg_buyer_cart", JSON.stringify(buyerCart));
+  drawBuyerCart();
+  updateBuyerCartUI();
+}
+
+window.clearBuyerCart = function() {
+  if (!confirm("إفراغ السلة؟")) return;
+  buyerCart = [];
+  localStorage.setItem("bg_buyer_cart", JSON.stringify(buyerCart));
+  drawBuyerCart();
+  updateBuyerCartUI();
+}
+
+window.updateBuyerCartUI = function() {
+  getEl("buyerCartCount").innerText = buyerCart.length;
+  getEl("buyerCartFloat").className = buyerCart.length > 0 ? "cart-float" : "cart-float hidden";
+}
+
+window.toggleBuyerModal = function(show) {
+  getEl("buyerModal").className = show ? "modal" : "modal hidden";
+  if (show) drawBuyerCart();
+}
+
+window.drawBuyerCart = function() {
+  var html = "", total = 0;
+  if (buyerCart.length === 0) {
+    html = "<p style='text-align:center;padding:15px;color:#666'>السلة فارغة</p>";
+    getEl("buyerCartTotal").className = "cart-total hidden";
+  } else {
+    for (var i = 0; i < buyerCart.length; i++) {
+      var c = buyerCart[i];
+      total += c.price;
+      html += '<div class="cart-item"><div class="cart-item-info"><b>' + c.name + '</b><br><small>🏪 ' + c.supName + '</small><br><span class="price">' + c.price.toLocaleString() + ' د.ع</span></div><button class="cart-remove" onclick="removeFromBuyerCart(' + i + ')">✕</button></div>';
+    }
+    getEl("buyerCartTotal").className = "cart-total";
+    getEl("buyerCartTotal").innerText = "المجموع: " + total.toLocaleString() + " د.ع";
+  }
+  getEl("buyerCartBody").innerHTML = html;
+}
+
+window.sendBuyerCartWhatsApp = function() {
+  if (buyerCart.length === 0) { alert("السلة فارغة!"); return; }
+  var bySup = {};
+  for (var i = 0; i < buyerCart.length; i++) {
+    var c = buyerCart[i];
+    if (!bySup[c.phone]) bySup[c.phone] = { name: c.supName, items: [], total: 0 };
+    bySup[c.phone].items.push(c);
+    bySup[c.phone].total += c.price;
+  }
+  var phones = Object.keys(bySup);
+  if (phones.length > 0) {
+    var first = bySup[phones[0]];
+    var msg = "مرحباً " + first.name + "، أريد طلب المواد التالية:\n\n";
+    for (var j = 0; j < first.items.length; j++) {
+      msg += "• " + first.items[j].name + " - " + first.items[j].price.toLocaleString() + " د.ع\n";
+    }
+    msg += "\nالمجموع: " + first.total.toLocaleString() + " د.ع\nشكراً لكم";
+    window.open("https://wa.me/" + phones[0].replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank");
+  }
+}
+
+window.drawProducts = function() {
+  var q = (getEl("q").value || "").toLowerCase();
+  var filter = getEl("supFilter").value;
+  var html = "";
+  var filterHtml = '<option value="">🏪 كل الموزعين (المميزون أولاً)</option>';
+  suppliers.forEach(function(s) {
+    if (s.active) filterHtml += '<option value="' + s.id + '">' + (s.vip ? '⭐ ' : '') + s.name + '</option>';
+  });
+  getEl("supFilter").innerHTML = filterHtml;
+  if (filter) getEl("supFilter").value = filter;
+
+  var filteredProducts = products.filter(function(p) {
+    var s = suppliers.find(function(sup) { return sup.id === p.supId; });
+    if (!s || !s.active) return false;
+    if (filter && String(s.id) !== filter) return false;
+    if (q && p.name.toLowerCase().indexOf(q) === -1 && s.name.toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  }).sort(function(a, b) {
+    var sa = suppliers.find(function(s) { return s.id === a.supId; });
+    var sb = suppliers.find(function(s) { return s.id === b.supId; });
+    return (sb.vip ? 1 : 0) - (sa.vip ? 1 : 0);
+  });
+
+  for (var i = 0; i < filteredProducts.length; i++) {
+    var p = filteredProducts[i];
+    var s = suppliers.find(function(sup) { return sup.id === p.supId; });
+    var originalIndex = products.findIndex(prod => prod.id === p.id);
+    html += '<div class="card' + (s.vip ? ' vip-card' : '') + '">';
+    if (s.vip) html += '<span style="color:gold;font-size:20px">⭐ </span>';
+    html += '<b style="font-size:18px">' + p.name + '</b><br>';
+    html += '<span class="sup-name">🏪 ' + s.name + '</span><br>';
+    html += '<span class="price">' + p.price.toLocaleString() + ' د.ع</span><br>';
+    html += '<button class="add-cart-btn" onclick="addToBuyerCart(' + originalIndex + ')">🛒 أضف للسلة</button>';
+    html += ' <a class="wa" target="_blank" href="https://wa.me/' + String(s.phone).replace(/\D/g,"") + '?text=' + encodeURIComponent("مرحبا " + s.name + "، أريد: " + p.name + " بسعر " + p.price.toLocaleString() + " د.ع") + '">📱 واتساب</a>';
+    html += '</div>';
+  }
+  getEl("productList").innerHTML = html || "لا توجد أسعار حالياً";
+}
+
+showTab(1);
+updateBuyerCartUI();
+</script>
+</body>
+</html>
